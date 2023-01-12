@@ -1,0 +1,40 @@
+{{#if error}}
+<div class="error">
+    {{error.message}}
+</div>
+{{else}}
+    <div class="stream">
+        {{#if feed}} 
+        {{> profileHeader actor=feed nobio=true}}
+        {{/if}}
+        {{#if activitystream}}
+            {{#each activitystream}}
+                {{#with this}}
+                    <div class="activity">
+                        {{#if boost}}
+                            <div class="boost">
+                            🚀 boosted by <a href="{{booster.url}}">{{booster.name}}</a>
+                            </div>
+                            {{> note note=note}}
+                        {{else}}
+                            {{> note note=note hidebyline=true}}
+                        {{/if}}
+                    </div>
+                {{/with}}
+            {{/each}}
+        {{else}}
+            <!-- TODO: empty state? -->
+            <div class="empty">
+                Select a conversation. To create a new one, navigate to a profile.
+            </div>
+        {{/if}}
+
+        {{#if next}}
+        <a href="?offset={{next}}" class="moreLink">More</a>
+        {{/if}}
+
+    </div>
+{{/if}}
+<script>
+    app.pollForPosts();
+</script>

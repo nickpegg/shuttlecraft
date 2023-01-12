@@ -21,7 +21,10 @@ import {
     isFollowing,
     getInboxIndex,
     getInbox,
-    writeInboxIndex
+    writeInboxIndex,
+    isReplyToMyPost,    
+    isReplyToFollowing
+
 } from '../lib/account.js';
 import {
     fetchUser
@@ -136,6 +139,52 @@ router.get('/following', async (req, res) => {
 });
 
 
+const getFeedList = async (num = 20) => {
+
+    const following = await getFollowing();
+
+    const feeds = await Promise.all(following.map(async (follower) => {
+        // posts in index by this author
+        // this is probably expensive.
+        // what we really need to do is look from this person by date
+        // and if we sort right it should be reasonable?
+        // and we just return unread counts for everything?
+        const posts = INDEX.filter((p) => p.actor == follower.actorId);
+        
+        // find most recent post
+        const mostRecent = posts.sort((a,b) => {
+            if (a.published > b.published) {
+                return -1;
+            } else if (a.published < b.published) {
+                return 1;
+            } else {
+                return 0;
+            }
+        })[0]?.published || null;
+
+        const account = await fetchUser(follower.actorId);
+
+        return {
+            actorId: follower.actorId,
+            actor: account.actor,
+            postCount: posts.length,
+            mostRecent: mostRecent,
+        }
+    }));
+
+    feeds.sort((a,b) => {
+        if (a.mostRecent > b.mostRecent) {
+            return -1;
+        } else if (a.mostRecent < b.mostRecent) {
+            return 1;
+        } else {
+            return 0;
+        }
+    });
+
+    return feeds.slice(0, num);
+}
+
 
 
 router.get('/', async (req, res) => {
@@ -181,6 +230,8 @@ router.get('/', async (req, res) => {
         return n;
     }));
 
+    const feeds = await getFeedList(20);
+
     if (req.query.json) {
         res.json(notes);
     } else {
@@ -193,6 +244,7 @@ router.get('/', async (req, res) => {
             offset: offset, 
             next: notes.length == pageSize ? next : null,
             activitystream: notes,
+            feeds: feeds,
             followers: followers,
             following: following,
             followersCount: followers.length,
@@ -248,10 +300,13 @@ router.get('/notifications', async (req, res) => {
     const following = getFollowing();
     const followers = getFollowers();
 
+    const feeds = await getFeedList(20);
+
     res.render('notifications', {
         layout: 'private',
         me: ActivityPub.actor,
         offset: offset,
+        feeds,
         next: notifications.length == pageSize ? offset + notifications.length : null,
         notifications: notifications.filter((n)=>n!==null),
         followersCount: followers.length,
@@ -259,6 +314,90 @@ router.get('/notifications', async (req, res) => {
     });
 });
 
+
+router.get('/feeds/:handle?', async (req, res) => {
+
+    const following = getFollowing();
+    const likes = await getLikes();
+    const boosts = await getBoosts();
+    const offset = parseInt(req.query.offset) || 0;
+    const pageSize = 20;
+    let feed;
+
+    const feeds = await getFeedList(20);
+
+    let activitystream;
+
+    if (req.params.handle) {
+        const account = await fetchUser(req.params.handle);
+        feed = account.actor;
+        activitystream = await Promise.all(INDEX.filter((p) => p.actor == account.actor.id).sort((a,b) => {
+            if (a.published > b.published) {
+                return -1;
+            } else if (a.published < b.published) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }).slice(offset, offset+pageSize).map(async (p) => {
+            try {
+                let boost, booster;
+                const mainacct = await fetchUser(p.actor);
+                let actor = mainacct.actor;
+                let post = await getActivity(p.id);
+                if (post.type === 'Announce') {
+                    boost = post;
+                    booster = actor;
+                    try {
+                        post = await getActivity(boost.object);
+                        const acct = await fetchUser(post.attributedTo);
+                        actor = acct.actor;
+                    } catch (err) {
+                        console.error(err);
+                        console.error('Could not fetch boosted post...', boost.object);
+                        // return;
+                    }
+                }
+        
+                if (actor) {
+                    actor.isFollowing = isFollowing(actor.id);
+        
+                    // determine if this post has already been liked
+                    post.isLiked = (likes.some((l) => l.activityId === post.id)) ? true : false;
+                    post.isBoosted = (boosts.some((l) => l.activityId === post.id)) ? true : false;
+        
+                } else {
+                    console.error('Post without an actor found', n.note.id);
+                }
+
+                return({
+                    boost,
+                    booster,
+                    note: post,
+                    actor: actor
+                });
+            } catch (err) {
+                console.error('error while loading post from index',err);
+            }
+        }));
+    }
+
+    // res.json(activitystream);
+    // return;
+    res.render('feeds', {
+        layout: 'private',
+        me: ActivityPub.actor,
+        feeds,
+        feed,
+        activitystream,
+        offset,
+        next: activitystream && activitystream.length == pageSize ? offset + activitystream.length : null,
+        // inboxes,
+        // inbox,
+        // error
+    });
+
+});
 
 router.get('/dms/:handle?', async (req, res) => {
     const inboxIndex = getInboxIndex();
