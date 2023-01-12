@@ -12,13 +12,17 @@
                 <span class="active">Unfollow</span>
                 <span class="inactive">Follow</span>
             </button>
+            <button class="bigfollow {{#if actor.isFollowing}}active{{/if}}" onclick='return app.toggleMute(this, "{{actor.id}}")'>
+                <span class="active">Hide from Latest</span>
+                <span class="inactive">Show in Latest</span>
+            </button>
             <a href="/private/dms/{{getUsername actor.id}}">✉️</a>
         </div>
     </div>
     <div class="profileBody">
         <div class="profile">
             <a href="{{or actor.url actor.id}}" class="author">{{actor.name}}</a>
-            <span class="handle">{{getUsername actor.id}}</span>      
+            <span class="handle">{{getUsername actor.id}}</span>
             {{#if actor.isFollower}}
             <span class="meta_tag">Follows you</span>
             {{/if}}
