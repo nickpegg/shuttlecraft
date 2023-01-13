@@ -145,7 +145,7 @@ router.get('/following', async (req, res) => {
 const getFeedList = async (num = 20) => {
 
     const following = await getFollowing();
-  
+
     const feeds = await Promise.all(following.map(async (follower) => {
         // posts in index by this author
         // this is probably expensive.
@@ -650,8 +650,6 @@ router.post('/mute', async (req, res) => {
                 logger('muting ', actor.id);
                 muted.push(actor.id);
                 writeMuted(muted);
-              
-                // TODO: clear their posts from any sort of stream cache?
 
                 return res.status(200).json({
                     isMuted: true

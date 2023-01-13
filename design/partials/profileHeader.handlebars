@@ -13,7 +13,7 @@
                 <span class="inactive">Follow</span>
             </button>
             <button class="bigfollow {{#if actor.isMuted}}active{{/if}}" onclick='return app.toggleMute(this, "{{actor.id}}")'>
-                <span class="active">Show in Latest</span>  
+                <span class="active">Show in Latest</span>
                 <span class="inactive">Hide from Latest</span>
             </button>
             <a href="/private/dms/{{getUsername actor.id}}">✉️</a>
