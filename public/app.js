@@ -266,7 +266,7 @@ const app = {
     toggleHidden: (el, userId) => {
       const Http = new XMLHttpRequest();
       const proxyUrl ='/private/hide';
-      console.log("attempting to hide");
+      console.log("attempting to hide/unhide ", userId);
       Http.open("POST", proxyUrl);
         Http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
         Http.send(JSON.stringify({
