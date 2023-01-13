@@ -22,7 +22,7 @@ import {
     getInboxIndex,
     getInbox,
     writeInboxIndex,
-    isReplyToMyPost,    
+    isReplyToMyPost,
     isReplyToFollowing,
     isHidden,
     getHidden,
