@@ -12,7 +12,7 @@
                 <span class="active">Unfollow</span>
                 <span class="inactive">Follow</span>
             </button>
-            <button id="feed-hide-button" class="bigfollow {{#if actor.isMuted}}active{{/if}}" onclick='return app.toggleMute(this, "{{actor.id}}")' {{#unless actor.isFollowing}}hidden{{/unless}}>
+            <button id="feed-hide-button" class="bigfollow {{#if actor.isHidden}}active{{/if}}" onclick='return app.toggleHidden(this, "{{actor.id}}")' {{#unless actor.isFollowing}}hidden{{/unless}}>
                 <span class="active">Show in Latest</span>
                 <span class="inactive">Hide from Latest</span>
             </button>
