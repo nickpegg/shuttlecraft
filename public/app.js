@@ -260,7 +260,36 @@ const app = {
             }
         }
         return false;
-    },    
+    },
+    toggleMute: (el, userId) => {
+      const Http = new XMLHttpRequest();
+      const proxyUrl ='/private/mute';
+      console.log("attempting to mute");
+      Http.open("POST", proxyUrl);
+        Http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        Http.send(JSON.stringify({
+            handle: userId,
+        }));
+
+        Http.onreadystatechange = () => {
+            if (Http.readyState == 4 && Http.status == 200) {
+                console.log('muted!');
+                const resRaw = Http.responseText;
+                const res = JSON.parse(resRaw);
+
+                if (res.isMuted) {
+                    console.log('muted!');
+                    el.classList.add("active");
+                } else {
+                    console.log('unmuted!');
+                    el.classList.remove("active");
+                }
+            } else {
+                console.error('HTTP PROXY CHANGE', Http);
+            }
+        }
+        return false;
+    },
     lookup: () => {
         const follow = document.getElementById('lookup');
         const lookup_results = document.getElementById('lookup_results');

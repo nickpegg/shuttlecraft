@@ -23,7 +23,10 @@ import {
     getInbox,
     writeInboxIndex,
     isReplyToMyPost,    
-    isReplyToFollowing
+    isReplyToFollowing,
+    isMuted,
+    getMuted,
+    writeMuted
 
 } from '../lib/account.js';
 import {
@@ -142,7 +145,7 @@ router.get('/following', async (req, res) => {
 const getFeedList = async (num = 20) => {
 
     const following = await getFollowing();
-
+  
     const feeds = await Promise.all(following.map(async (follower) => {
         // posts in index by this author
         // this is probably expensive.
@@ -223,6 +226,10 @@ router.get('/', async (req, res) => {
             n.note.isLiked = (likes.some((l) => l.activityId === n.note.id)) ? true : false;
             n.note.isBoosted = (boosts.some((l) => l.activityId === n.note.id)) ? true : false;
 
+            // handle muted users
+            if (isMuted(n.actor.id)) {
+              return;
+            }
         } else {
             console.error('Post without an actor found', n.note.id);
         }
@@ -361,6 +368,7 @@ router.get('/feeds/:handle?', async (req, res) => {
         
                 if (actor) {
                     actor.isFollowing = isFollowing(actor.id);
+                    actor.isMuted = isMuted(actor.id);
         
                     // determine if this post has already been liked
                     post.isLiked = (likes.some((l) => l.activityId === post.id)) ? true : false;
@@ -616,6 +624,47 @@ router.post('/follow', async (req, res) => {
 
                 return res.status(200).json({
                     isFollowed: false
+                });
+            }
+        }
+    }
+    res.status(404).send('not found');
+});
+
+router.post('/mute', async (req, res) => {
+
+    const handle = req.body.handle;
+    if (handle) {
+        if (handle === req.app.get('account').actor.id) {
+            return res.status(200).json({
+                isMuted: false
+            });
+        }
+        const {
+            actor
+        } = await fetchUser(handle);
+        if (actor) {
+            const status = isMuted(actor.id);
+            let muted = getMuted();
+            if (!status) {
+                logger('muting ', actor.id);
+                muted.push(actor.id);
+                writeMuted(muted);
+              
+                // TODO: clear their posts from any sort of stream cache?
+
+                return res.status(200).json({
+                    isMuted: true
+                });
+
+            } else {
+                // filter out the one we are removing
+                logger('unmuting ', actor.id);
+                muted = muted.filter((l) => l !== actor.id);
+                writeMuted(muted);
+
+                return res.status(200).json({
+                    ismuted: false
                 });
             }
         }
