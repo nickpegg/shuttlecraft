@@ -251,9 +251,11 @@ const app = {
                 if (res.isFollowed) {
                     console.log('followed!');
                     el.classList.add("active");
+                    document.getElementById("feed-hide-button").hidden = false;
                 } else {
                     console.log('unfollowed');
                     el.classList.remove("active");
+                    document.getElementById("feed-hide-button").hidden = true;
                 }
             } else {
                 console.error('HTTP PROXY CHANGE', Http);
@@ -312,5 +314,5 @@ const app = {
             }
         }
         return false;
-    }    
+    }
 }
