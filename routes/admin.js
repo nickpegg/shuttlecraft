@@ -22,8 +22,11 @@ import {
     getInboxIndex,
     getInbox,
     writeInboxIndex,
-    isReplyToMyPost,    
-    isReplyToFollowing
+    isReplyToMyPost,
+    isReplyToFollowing,
+    isHidden,
+    getHidden,
+    writeHidden
 
 } from '../lib/account.js';
 import {
@@ -202,6 +205,11 @@ router.get('/', async (req, res) => {
     } = await getActivityStream(pageSize, offset);
 
     const notes = await Promise.all(activitystream.map(async (n) => {
+        // ignore follows which are hidden from the Latest feed
+        if (n.actor && isHidden(n.actor.id)) {
+          return;
+        }
+
         // handle boosted posts
         if (n.note.type === 'Announce') {
             n.boost = n.note;
@@ -361,7 +369,8 @@ router.get('/feeds/:handle?', async (req, res) => {
         
                 if (actor) {
                     actor.isFollowing = isFollowing(actor.id);
-        
+                    actor.isHidden = isHidden(actor.id);
+
                     // determine if this post has already been liked
                     post.isLiked = (likes.some((l) => l.activityId === post.id)) ? true : false;
                     post.isBoosted = (boosts.some((l) => l.activityId === post.id)) ? true : false;
@@ -616,6 +625,45 @@ router.post('/follow', async (req, res) => {
 
                 return res.status(200).json({
                     isFollowed: false
+                });
+            }
+        }
+    }
+    res.status(404).send('not found');
+});
+
+router.post('/hide', async (req, res) => {
+
+    const handle = req.body.handle;
+    if (handle) {
+        if (handle === req.app.get('account').actor.id) {
+            return res.status(200).json({
+                isHidden: false
+            });
+        }
+        const {
+            actor
+        } = await fetchUser(handle);
+        if (actor) {
+            const status = isHidden(actor.id);
+            let hidden = getHidden();
+            if (!status) {
+                logger('hiding ', actor.id);
+                hidden.push(actor.id);
+                writeHidden(hidden);
+
+                return res.status(200).json({
+                    isHidden: true
+                });
+
+            } else {
+                // filter out the one we are removing
+                logger('unhiding ', actor.id);
+                hidden = hidden.filter((l) => l !== actor.id);
+                writeHidden(hidden);
+
+                return res.status(200).json({
+                    isHidden: false
                 });
             }
         }

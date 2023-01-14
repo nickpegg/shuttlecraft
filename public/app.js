@@ -248,11 +248,42 @@ const app = {
                 const resRaw = Http.responseText;
                 const res = JSON.parse(resRaw);
 
+                feedHideButton = document.getElementById("feed-hide-button");
                 if (res.isFollowed) {
                     console.log('followed!');
                     el.classList.add("active");
+                    feedHideButton.hidden = false;
                 } else {
                     console.log('unfollowed');
+                    el.classList.remove("active");
+                    feedHideButton.hidden = true;
+                }
+            } else {
+                console.error('HTTP PROXY CHANGE', Http);
+            }
+        }
+        return false;
+    },
+    toggleHidden: (el, userId) => {
+      const Http = new XMLHttpRequest();
+      const proxyUrl ='/private/hide';
+      console.log("attempting to hide/unhide ", userId);
+      Http.open("POST", proxyUrl);
+        Http.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        Http.send(JSON.stringify({
+            handle: userId,
+        }));
+
+        Http.onreadystatechange = () => {
+            if (Http.readyState == 4 && Http.status == 200) {
+                const resRaw = Http.responseText;
+                const res = JSON.parse(resRaw);
+
+                if (res.isHidden) {
+                    console.log('hidden!');
+                    el.classList.add("active");
+                } else {
+                    console.log('unhidden!');
                     el.classList.remove("active");
                 }
             } else {
@@ -260,7 +291,7 @@ const app = {
             }
         }
         return false;
-    },    
+    },
     lookup: () => {
         const follow = document.getElementById('lookup');
         const lookup_results = document.getElementById('lookup_results');

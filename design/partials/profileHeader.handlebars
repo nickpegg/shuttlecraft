@@ -12,6 +12,10 @@
                 <span class="active">Unfollow</span>
                 <span class="inactive">Follow</span>
             </button>
+            <button id="feed-hide-button" class="bigfollow {{#if actor.isHidden}}active{{/if}}" onclick='return app.toggleHidden(this, "{{actor.id}}")' {{#unless actor.isFollowing}}hidden{{/unless}}>
+                <span class="active">Show in Latest</span>
+                <span class="inactive">Hide from Latest</span>
+            </button>
             <a href="/private/dms/{{getUsername actor.id}}">✉️</a>
         </div>
     </div>
