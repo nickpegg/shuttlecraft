@@ -205,6 +205,11 @@ router.get('/', async (req, res) => {
     } = await getActivityStream(pageSize, offset);
 
     const notes = await Promise.all(activitystream.map(async (n) => {
+        // ignore follows which are hidden from the Latest feed
+        if (n.actor && isHidden(n.actor.id)) {
+          return;
+        }
+
         // handle boosted posts
         if (n.note.type === 'Announce') {
             n.boost = n.note;
@@ -226,10 +231,6 @@ router.get('/', async (req, res) => {
             n.note.isLiked = (likes.some((l) => l.activityId === n.note.id)) ? true : false;
             n.note.isBoosted = (boosts.some((l) => l.activityId === n.note.id)) ? true : false;
 
-            // ignore follows which are hidden from the Latest feed
-            if (isHidden(n.actor.id)) {
-              return;
-            }
         } else {
             console.error('Post without an actor found', n.note.id);
         }
