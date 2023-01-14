@@ -248,14 +248,15 @@ const app = {
                 const resRaw = Http.responseText;
                 const res = JSON.parse(resRaw);
 
+                feedHideButton = document.getElementById("feed-hide-button");
                 if (res.isFollowed) {
                     console.log('followed!');
                     el.classList.add("active");
-                    document.getElementById("feed-hide-button").hidden = false;
+                    feedHideButton.hidden = false;
                 } else {
                     console.log('unfollowed');
                     el.classList.remove("active");
-                    document.getElementById("feed-hide-button").hidden = true;
+                    feedHideButton.hidden = true;
                 }
             } else {
                 console.error('HTTP PROXY CHANGE', Http);
